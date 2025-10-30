@@ -1,5 +1,4 @@
 import os
-import asyncio
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
@@ -11,7 +10,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 
 # === НАСТРОЙКИ ===
 GUILD_ID = 1304564477152202862
-TICKET_CATEGORY_ID = 1366447608721178735
+TICKET_CATEGORY_ID = 1304564477152202862
 ADMIN_ROLE_ID = 1304567009656307735
 ACCEPT_ROLE_ID = 1304596188665872384
 ACCEPT_MANAGE_ROLES = [
@@ -32,10 +31,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 tickets_open = True  # глобальная переменная для состояния тикетов
 
-# === Проверка наличия GIF ===
-def gif_file_if_exists():
-    path = os.path.join(os.path.dirname(__file__), GIF_PATH)
-    return path if os.path.exists(path) else None
 
 # === Команды для админов ===
 @bot.command()
@@ -43,14 +38,15 @@ def gif_file_if_exists():
 async def закрыто(ctx):
     global tickets_open
     tickets_open = False
-    await ctx.send("🚫 Тикеты временно закрыты. Новые заявки создать нельзя.")
+    await ctx.send("🚫 Тикеты тимчасово закриті. Нові заявки створити неможливо.")
 
 @bot.command()
 @commands.has_role(ADMIN_ROLE_ID)
 async def открыто(ctx):
     global tickets_open
     tickets_open = True
-    await ctx.send("✅ Тикеты снова открыты. Можно подавать заявки.")
+    await ctx.send("✅ Тикети знову відкриті. Можна подавати заявки.")
+
 
 # === Команда !заявка ===
 @bot.command()
@@ -72,11 +68,6 @@ async def заявка(ctx):
 
     embed = discord.Embed(title="📩 Подати заявку до MX", description=description, color=0x2ecc71)
     embed.set_footer(text="MX Clan Recruitment")
-
-    gif_path = gif_file_if_exists()
-    file = discord.File(gif_path, filename="standard_9.gif") if gif_path else None
-    if gif_path:
-        embed.set_image(url="attachment://standard_9.gif")
 
     button = Button(label="📩 Подати заявку", style=discord.ButtonStyle.primary)
 
@@ -117,7 +108,7 @@ async def заявка(ctx):
         )
 
         app_text = (
-            "**📝 Анкета:**\n"
+            "**📝 Анкета для заповнення:**\n"
             "```"
             "1. Ім'я:\n"
             "2. Звідки ви:\n"
@@ -133,17 +124,29 @@ async def заявка(ctx):
         )
 
         embed2 = discord.Embed(title="📋 Ваша заявка", description=app_text, color=0x3498db)
-        if gif_path:
-            embed2.set_image(url="attachment://standard_9.gif")
+        embed2.set_footer(text="MX Clan Application")
 
-        await ticket.send(embed=embed2, file=file if gif_path else None)
+        # Загружаем GIF заново (чтобы не закрывался файл)
+        if os.path.exists(GIF_PATH):
+            file2 = discord.File(GIF_PATH, filename="standard_9.gif")
+            embed2.set_image(url="attachment://standard_9.gif")
+            await ticket.send(embed=embed2, file=file2)
+        else:
+            await ticket.send(embed=embed2)
+
         await interaction.response.send_message(f"✅ Заявку створено: {ticket.mention}", ephemeral=True)
 
     button.callback = button_callback
     view = View()
     view.add_item(button)
 
-    await ctx.send(embed=embed, view=view, file=file if gif_path else None)
+    if os.path.exists(GIF_PATH):
+        file = discord.File(GIF_PATH, filename="standard_9.gif")
+        embed.set_image(url="attachment://standard_9.gif")
+        await ctx.send(embed=embed, view=view, file=file)
+    else:
+        await ctx.send(embed=embed, view=view)
+
 
 # === on_ready ===
 @bot.event
