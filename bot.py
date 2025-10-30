@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ui import Button, View
 from dotenv import load_dotenv
 
-# === Загрузка токена из .env ===
+# === Загружаем токен ===
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -30,74 +30,75 @@ intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Глобальное состояние тикетов ===
-tickets_open = True
+tickets_open = True  # глобальная переменная для состояния тикетов
 
-# === Утилита для GIF ===
+# === Проверка наличия GIF ===
 def gif_file_if_exists():
     path = os.path.join(os.path.dirname(__file__), GIF_PATH)
     return path if os.path.exists(path) else None
 
-# === Команды управления тикетами ===
+# === Команды для админов ===
 @bot.command()
 @commands.has_role(ADMIN_ROLE_ID)
 async def закрыто(ctx):
     global tickets_open
     tickets_open = False
-    await ctx.send("🚫 Тикеты временно закриті. Нові заявки неможливо створити.")
+    await ctx.send("🚫 Тикеты временно закрыты. Новые заявки создать нельзя.")
 
 @bot.command()
 @commands.has_role(ADMIN_ROLE_ID)
 async def открыто(ctx):
     global tickets_open
     tickets_open = True
-    await ctx.send("✅ Тикети знову відкриті! Користувачі можуть подавати заявки.")
+    await ctx.send("✅ Тикеты снова открыты. Можно подавать заявки.")
 
-# === Команда заявки ===
+# === Команда !заявка ===
 @bot.command()
 @commands.has_role(ADMIN_ROLE_ID)
 async def заявка(ctx):
-    """Відправляє embed з анкетою і кнопкою для створення заявки"""
-    global tickets_open
     description = (
-        "Натисніть кнопку нижче, щоб створити приватний канал для заповнення анкети.\n\n"
-        "## 💥 Ласкаво просимо до «MX» — елітного клану!\n"
-        "```\n"
-        "1. Ім'я:\n2. Звідки ви:\n3. Вік (від 16 років):\n4. Години в Rust (3000+):\n"
-        "5. Кількість кілів на R2 FC (35+):\n6. Досвід гри в кланах:\n7. Середній онлайн:\n8. Steam профіль:\n9. Напрямок (PVP/білд/фарм):\n"
-        "```\n\n"
-        "⚙️ **Вимоги:**\n"
-        "• 3000+ годин у Rust\n• 16+ років\n• 35+ FC R2\n• Серйозне ставлення до гри"
+        "**💥 Ласкаво просимо до «𝗠𝗫» — елітного клану для справжніх гравців! 💥**\n"
+        "Ми — команда, яка не просто грає, а *живе* своєю грою! 💪\n\n"
+        "**🔹 Ми шукаємо саме тебе, якщо ти:**\n"
+        "• Вік: від 16 років\n"
+        "• Години в Rust: 3000+\n"
+        "• Кілі на R2 FC: 35+\n"
+        "• Серйозне ставлення до гри\n"
+        "• Активність, командна гра, адекватність\n\n"
+        "**⚡ Що ти отримаєш, приєднавшись до MX?**\n"
+        "🔥 Високий онлайн\n🏆 Досвідчені гравці\n🚫 Без токсичності\n🎧 Зручний Discord\n\n"
+        "Натисніть кнопку нижче, щоб подати заявку 👇"
     )
 
-    embed = discord.Embed(title="📩 Подати заявку в MX", description=description, color=0x2ecc71)
+    embed = discord.Embed(title="📩 Подати заявку до MX", description=description, color=0x2ecc71)
     embed.set_footer(text="MX Clan Recruitment")
+
     gif_path = gif_file_if_exists()
     file = discord.File(gif_path, filename="standard_9.gif") if gif_path else None
     if gif_path:
         embed.set_image(url="attachment://standard_9.gif")
 
-    apply_button = Button(label="📩 Подати заявку", style=discord.ButtonStyle.primary)
+    button = Button(label="📩 Подати заявку", style=discord.ButtonStyle.primary)
 
-    async def apply_callback(interaction: discord.Interaction):
+    async def button_callback(interaction: discord.Interaction):
         global tickets_open
         if not tickets_open:
             await interaction.response.send_message(
-                "🚫 На даний момент прийом заявок закритий. Спробуйте пізніше.", ephemeral=True
+                "🚫 На даний момент прийом заявок закритий. Спробуйте пізніше.",
+                ephemeral=True
             )
             return
 
-        await interaction.response.defer(ephemeral=True, thinking=True)
         guild = interaction.guild
         category = guild.get_channel(TICKET_CATEGORY_ID)
         if category is None:
-            await interaction.followup.send("❌ Категорія для заявок не знайдена.", ephemeral=True)
+            await interaction.response.send_message("❌ Категорію не знайдено.", ephemeral=True)
             return
 
         safe_name = interaction.user.name.lower().replace(" ", "-")
         existing = discord.utils.get(guild.text_channels, name=f"заявка-{safe_name}")
         if existing:
-            await interaction.followup.send(f"❗ У вас вже є заявка: {existing.mention}", ephemeral=True)
+            await interaction.response.send_message(f"❗ У вас вже є заявка: {existing.mention}", ephemeral=True)
             return
 
         overwrites = {
@@ -109,32 +110,47 @@ async def заявка(ctx):
             if role:
                 overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
-        ticket_channel = await guild.create_text_channel(
+        ticket = await guild.create_text_channel(
             name=f"заявка-{safe_name}",
             category=category,
             overwrites=overwrites
         )
 
-        embed_ticket = discord.Embed(
-            title="📝 Ваша заявка",
-            description="Скопіюйте шаблон і заповніть усі пункти нижче!",
-            color=0x3498db
+        app_text = (
+            "**📝 Анкета:**\n"
+            "```"
+            "1. Ім'я:\n"
+            "2. Звідки ви:\n"
+            "3. Вік (від 16 років):\n"
+            "4. Години в Rust (3000+):\n"
+            "5. Кілі на R2 FC (35+):\n"
+            "6. Досвід гри в кланах:\n"
+            "7. Середній онлайн на день:\n"
+            "8. Steam профіль:\n"
+            "9. Напрямок у Rust (PVP/білд/фарм):"
+            "```\n"
+            "Адміністрація перевірить вашу заявку найближчим часом. 🔎"
         )
+
+        embed2 = discord.Embed(title="📋 Ваша заявка", description=app_text, color=0x3498db)
         if gif_path:
-            embed_ticket.set_image(url="attachment://standard_9.gif")
+            embed2.set_image(url="attachment://standard_9.gif")
 
-        await ticket_channel.send(embed=embed_ticket, file=file if gif_path else None)
-        await interaction.followup.send(f"✅ Заявку створено: {ticket_channel.mention}", ephemeral=True)
+        await ticket.send(embed=embed2, file=file if gif_path else None)
+        await interaction.response.send_message(f"✅ Заявку створено: {ticket.mention}", ephemeral=True)
 
-    apply_button.callback = apply_callback
+    button.callback = button_callback
     view = View()
-    view.add_item(apply_button)
+    view.add_item(button)
 
     await ctx.send(embed=embed, view=view, file=file if gif_path else None)
 
-# === Запуск ===
+# === on_ready ===
 @bot.event
 async def on_ready():
     print(f"✅ Бот запущено як {bot.user}")
 
-bot.run(TOKEN)
+if not TOKEN:
+    print("❌ Токен не знайдено у Railway Variables!")
+else:
+    bot.run(TOKEN)
