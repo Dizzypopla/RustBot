@@ -27,7 +27,7 @@ def gif_file_if_exists():
         return None
 
 
-# === View с кнопкой "Подать заявку" ===
+# === View с кнопкой "Подати заявку" ===
 class ApplicationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -36,14 +36,14 @@ class ApplicationView(discord.ui.View):
     async def apply_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         global tickets_open
         if not tickets_open:
-            await interaction.user.send("❌ На данный момент заявки закрыты. Попробуйте позже.")
-            await interaction.response.send_message("Заявки временно закрыты.", ephemeral=True)
+            await interaction.user.send("❌ На даний момент заявки закриті. Спробуйте пізніше.")
+            await interaction.response.send_message("Заявки тимчасово закриті.", ephemeral=True)
             return
 
         guild = interaction.guild
         category = discord.utils.get(guild.categories, id=TICKET_CATEGORY_ID)
         if category is None:
-            await interaction.response.send_message("⚠️ Ошибка: категория для тикетов не найдена.", ephemeral=True)
+            await interaction.response.send_message("⚠️ Помилка: категорію для заявок не знайдено.", ephemeral=True)
             return
 
         overwrites = {
@@ -57,20 +57,32 @@ class ApplicationView(discord.ui.View):
                 overwrites[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
 
         ticket_channel = await guild.create_text_channel(
-            name=f"ticket-{interaction.user.name}",
+            name=f"заявка-{interaction.user.name}",
             category=category,
             overwrites=overwrites
         )
 
-        await ticket_channel.send(f"{interaction.user.mention}, дякуємо за заявку! Адміністрація незабаром відповість.")
-        await interaction.response.send_message(f"✅ Ваш тикет створено: {ticket_channel.mention}", ephemeral=True)
+        await ticket_channel.send(
+            f"{interaction.user.mention}, дякуємо за заявку! Будь ласка, заповніть форму нижче:\n\n"
+            "1. Ваш нікнейм у Steam:\n"
+            "2. Вік (від 16 років):\n"
+            "3. Дискорд тег:\n"
+            "4. Середній онлайн на день:\n"
+            "5. Кількість годин у Rust:\n"
+            "6. Досвід гри в кланах:\n"
+            "7. Скільки стабільно кілів на сервері R2 (мін. 35):\n"
+            "8. Посилання на Steam профіль:\n"
+            "9. Звідки дізнались про клан:\n"
+            "10. Напрям у Rust (білд / PvP / фарм тощо):"
+        )
+        await interaction.response.send_message(f"✅ Ваша заявка створена: {ticket_channel.mention}", ephemeral=True)
 
 
 # === Команда !заявка ===
 @bot.command()
 async def заявка(ctx):
     embed = discord.Embed(
-        title="🧩 Вимоги до кандидатів:",
+        title="⚙️ Вимоги до кандидатів:",
         description=(
             "● Від 3 000 годин у Rust\n"
             "● Вік 16+ (без винятків)\n"
@@ -86,7 +98,7 @@ async def заявка(ctx):
     embed.set_image(url="attachment://standard_9.gif" if file else None)
     embed.set_footer(text="MX Clan Recruitment")
 
-    await ctx.send(embed=embed, file=file, view=ApplicationView() if file else ApplicationView())
+    await ctx.send(embed=embed, file=file, view=ApplicationView())
 
 
 # === Команды управления тикетами ===
@@ -94,13 +106,13 @@ async def заявка(ctx):
 async def закрыто(ctx):
     global tickets_open
     tickets_open = False
-    await ctx.send("🚫 Тикеты временно **закрыты**.")
+    await ctx.send("🚫 Заявки тимчасово **закриті**.")
 
 @bot.command()
 async def открыто(ctx):
     global tickets_open
     tickets_open = True
-    await ctx.send("✅ Тикеты снова **открыты**!")
+    await ctx.send("✅ Заявки знову **відкриті**!")
 
 
 # === Запуск бота ===
