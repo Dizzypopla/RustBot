@@ -23,7 +23,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 class ApplicationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(discord.ui.Button(label="📩 Подати заявку", style=discord.ButtonStyle.primary, custom_id="apply_button"))
 
     @discord.ui.button(label="📩 Подати заявку", style=discord.ButtonStyle.primary, custom_id="apply_button")
     async def button_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
