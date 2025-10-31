@@ -118,7 +118,7 @@ async def заявка(ctx):
                           custom_id=f"apply_{uuid4().hex}")
 
     async def apply_callback(interaction: discord.Interaction):
-        nonlocal tickets_open
+        global tickets_open
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         if not tickets_open:
