@@ -4,6 +4,7 @@ import os
 import re
 import asyncio
 from datetime import datetime, timedelta
+from io import BytesIO  # Добавили для работы с байтами GIF
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -32,11 +33,10 @@ def load_gif():
         return None, None
     with open(gif_path, "rb") as f:
         data = f.read()
-    file = discord.File(fp=data, filename="image.gif")
+    file = discord.File(fp=BytesIO(data), filename="image.gif")  # Исправлено
     return file, "attachment://image.gif"
 
-
-# ----------- МОДАЛ НА ВІДХИЛЕННЯ ЗАЯВКИ -----------
+# ----------- МОДАЛ НА ВІДХИЛЕННЯ ЗАЯВКИ ----------- 
 class DenyModal(discord.ui.Modal):
     def __init__(self, user, channel):
         super().__init__(title="Відхилення заявки")
@@ -54,24 +54,20 @@ class DenyModal(discord.ui.Modal):
         guild = interaction.guild
         member = guild.get_member(self.user.id)
 
-        # Надсилання причини в ЛС
         try:
             await member.send(f"❌ Ваша заявка була відхилена.\n**Причина:** {self.reason.value}")
         except:
             pass
 
-        # Видати роль
         role = guild.get_role(DENIED_ROLE)
         if role:
             await member.add_roles(role)
 
-        # Повідомлення в тікеті
         await self.channel.send(
             f"🔴 Заявка від користувача {member.mention} була **відхилена**.\n"
             f"**Причина:** {self.reason.value}"
         )
 
-        # Закрити тікет — тільки адміни мають доступ
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
         }
@@ -80,11 +76,9 @@ class DenyModal(discord.ui.Modal):
             overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         await self.channel.edit(overwrites=overwrites)
-
         await interaction.response.send_message("Заявку відхилено.", ephemeral=True)
 
-
-# ----------- КНОПКА ВІДХИЛЕННЯ -----------
+# ----------- КНОПКА ВІДХИЛЕННЯ ----------- 
 class DenyButton(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=None)
@@ -98,8 +92,7 @@ class DenyButton(discord.ui.View):
         modal = DenyModal(self.user, interaction.channel)
         await interaction.response.send_modal(modal)
 
-
-# ----------- СТВОРЕННЯ ТІКЕТУ -----------
+# ----------- СТВОРЕННЯ ТІКЕТУ ----------- 
 class ApplicationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -159,8 +152,7 @@ class ApplicationView(discord.ui.View):
             f"✅ Твій тікет створено: {ticket_channel.mention}", ephemeral=True
         )
 
-
-# ----------- !ЗАЯВКА -----------
+# ----------- !ЗАЯВКА ----------- 
 @bot.command(name="заявка")
 async def application(ctx):
     embed = discord.Embed(
@@ -192,9 +184,7 @@ async def application(ctx):
 
     await ctx.send(embed=embed, file=file, view=ApplicationView())
 
-
-
-# ----------- !НАБІР -----------
+# ----------- !НАБІР ----------- 
 class RecruitModal(discord.ui.Modal, title="Оголошення про набір"):
     name = discord.ui.TextInput(label="Назва клану", max_length=100)
     desc = discord.ui.TextInput(label="Опис", style=discord.TextStyle.paragraph, max_length=2000)
@@ -206,7 +196,6 @@ class RecruitModal(discord.ui.Modal, title="Оголошення про набі
     async def on_submit(self, interaction: discord.Interaction):
         user_id = self.user.id
 
-        # КД
         if user_id in cooldowns and cooldowns[user_id] > datetime.now():
             remain = cooldowns[user_id] - datetime.now()
             return await interaction.response.send_message(
@@ -214,7 +203,6 @@ class RecruitModal(discord.ui.Modal, title="Оголошення про набі
                 ephemeral=True
             )
 
-        # Перевірка на лінки
         if re.search(r"https?://|www\.|discord\.gg", str(self.desc)):
             cooldowns[user_id] = datetime.now() + timedelta(hours=24)
             try:
@@ -234,18 +222,14 @@ class RecruitModal(discord.ui.Modal, title="Оголошення про набі
         embed.set_thumbnail(url=self.user.display_avatar.url)
 
         await channel.send(content=f"👤 {self.user.mention}", embed=embed)
-
         cooldowns[user_id] = datetime.now() + timedelta(hours=24)
-
         await interaction.response.send_message("✅ Оголошення надіслано!", ephemeral=True)
-
 
 class RecruitView(discord.ui.View):
     @discord.ui.button(label="📝 Опублікувати оголошення", style=discord.ButtonStyle.primary)
     async def open(self, interaction: discord.Interaction, button):
         modal = RecruitModal(interaction.user)
         await interaction.response.send_modal(modal)
-
 
 @bot.command(name="набір")
 async def recruit(ctx):
@@ -263,12 +247,9 @@ async def recruit(ctx):
     )
     await ctx.send(embed=embed, view=RecruitView())
 
-
-
-# ----------- СТАРТ -----------
+# ----------- СТАРТ ----------- 
 @bot.event
 async def on_ready():
     print(f"✅ Бот запущено як {bot.user}")
-
 
 bot.run(TOKEN)
