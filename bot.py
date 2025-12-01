@@ -4,7 +4,7 @@ import os
 import re
 import asyncio
 from datetime import datetime, timedelta
-from io import BytesIO  # Добавили для работы с байтами GIF
+from io import BytesIO  # Для работы с байтами GIF
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -31,9 +31,10 @@ def load_gif():
     gif_path = "standard_9.gif"
     if not os.path.exists(gif_path):
         return None, None
+    # Читаем байты и оборачиваем в BytesIO
     with open(gif_path, "rb") as f:
         data = f.read()
-    file = discord.File(fp=BytesIO(data), filename="image.gif")  # Исправлено
+    file = discord.File(fp=BytesIO(data), filename="image.gif")
     return file, "attachment://image.gif"
 
 # ----------- МОДАЛ НА ВІДХИЛЕННЯ ЗАЯВКИ ----------- 
