@@ -31,7 +31,6 @@ def load_gif():
     gif_path = "standard_9.gif"
     if not os.path.exists(gif_path):
         return None, None
-    # Читаем байты и оборачиваем в BytesIO
     with open(gif_path, "rb") as f:
         data = f.read()
     file = discord.File(fp=BytesIO(data), filename="image.gif")
@@ -129,12 +128,12 @@ class ApplicationView(discord.ui.View):
                 "2️⃣ Середній онлайн на день:\n"
                 "3️⃣ Кількість годин у Rust:\n"
                 "4️⃣ Досвід гри в кланах:\n"
-                "5️⃣ Кіли на сервері R2 (мін. 45):\n"
+                "5️⃣ Кiли на сервері R2 (мін. 45):\n"
                 "6️⃣ Посилання на Steam профіль:\n"
                 "7️⃣ Звідки дізнався про клан:\n"
                 "8️⃣ Напрям у Rust (білд / PvP / фарм тощо):"
             ),
-            color=0x2b2d31
+            color=0x3498db
         )
         embed2.set_footer(text="MX Clan Recruitment")
 
@@ -162,12 +161,11 @@ async def application(ctx):
             "**🔹 Ми шукаємо саме тебе, якщо ти:**\n"
             "• Вік: від 16 років\n"
             "• Години в Rust: 3000+\n"
-            "• Кіли на R2 FC: 45+\n"
+            "• Кiли на R2 FC: 45+\n"
             "• Активність: 8+ годин на добу\n"
             "• Можливість купувати VIP (10$ +)\n"
             "• Серйозне ставлення до гри\n"
             "• Активність, командна гра, адекватність\n\n"
-
             "**⚡ Що ти отримаєш, приєднавшись до MX?**\n"
             "🔥 Високий онлайн\n"
             "🏆 Досвідчені гравці\n"
@@ -176,7 +174,7 @@ async def application(ctx):
             "💣 Масштабні рейди\n\n"
             "Натисни кнопку нижче, щоб подати заявку 👇"
         ),
-        color=0x2b2d31
+        color=0x3498db
     )
 
     file, url = load_gif()
@@ -217,12 +215,16 @@ class RecruitModal(discord.ui.Modal, title="Оголошення про набі
         embed = discord.Embed(
             title=f"📢 Набір у клан: {self.name.value}",
             description=self.desc.value,
-            color=0x2b2d31
+            color=0x3498db
         )
         embed.set_footer(text=f"Автор: {self.user}")
         embed.set_thumbnail(url=self.user.display_avatar.url)
 
-        await channel.send(content=f"👤 {self.user.mention}", embed=embed)
+        file, url = load_gif()
+        if file:
+            embed.set_image(url=url)
+
+        await channel.send(content=f"👤 {self.user.mention}", embed=embed, file=file)
         cooldowns[user_id] = datetime.now() + timedelta(hours=24)
         await interaction.response.send_message("✅ Оголошення надіслано!", ephemeral=True)
 
@@ -244,9 +246,14 @@ async def recruit(ctx):
             "• До 2000 символів\n"
             "• Заборонені будь-які посилання"
         ),
-        color=0x2b2d31
+        color=0x3498db
     )
-    await ctx.send(embed=embed, view=RecruitView())
+
+    file, url = load_gif()
+    if file:
+        embed.set_image(url=url)
+
+    await ctx.send(embed=embed, view=RecruitView(), file=file)
 
 # ----------- СТАРТ ----------- 
 @bot.event
